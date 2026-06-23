@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=GNOME Mali
+Comment=GNOME Shell on Mali GPU via HWC2
+Exec=/usr/libexec/gnome-mali-session
+TryExec=/usr/libexec/gnome-mali-session
+Type=Application
+DesktopNames=GNOME
+X-GDM-SessionRegisters=true

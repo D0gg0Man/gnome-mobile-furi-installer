@@ -1,0 +1,47 @@
+[Unit]
+Description=GNOME Shell Mobile on Mali GPU via HWC2 (drmadapter)
+# Take over the role phosh had: own tty7, replace the getty, fall back to
+# phosh if the mobile shell cannot come up.
+Conflicts=getty@tty1.service phosh.service
+After=getty@tty1.service phosh.service
+After=rc-local.service plymouth-quit-wait.service systemd-user-sessions.service
+After=dbus.socket session-c1.scope
+# HWC2 lives in the Android container; wait for it like phosh does.
+Requires=lxc@android.service
+After=lxc@android.service android-service@hwcomposer.service
+Wants=dbus.socket
+Before=graphical.target
+ConditionPathExists=/dev/tty0
+# If the mobile shell fails repeatedly, fall back to phosh instead of a black screen.
+OnFailure=phosh.service
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Environment=LANG=C.UTF-8
+Environment=XDG_CURRENT_DESKTOP=GNOME
+Environment=XDG_SESSION_DESKTOP=gnome
+Environment=XDG_SESSION_TYPE=wayland
+# Wait for the hwcomposer android prop, exactly like phosh's 10-wait drop-in.
+ExecStartPre=/bin/bash -c "WAITFORSERVICE_VALUE=1 waitforservice vendor.furios.hwcomposer.ready && sleep 3"
+ExecStart=/sbin/capsh --noamb -- -c "exec /usr/libexec/gnome-mali-session"
+ExecStartPost=+/usr/bin/chvt 7
+TimeoutStartSec=60
+User=32011
+PAMName=gnome-mali
+WorkingDirectory=~
+Restart=always
+RestartSec=5s
+
+TTYPath=/dev/tty7
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty7
+UtmpMode=user
+
+[Install]
+WantedBy=graphical.target

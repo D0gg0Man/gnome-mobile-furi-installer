@@ -1,0 +1,16 @@
+[Unit]
+Description=Strip phosh hwcomposer leftovers from the user env (gnome-mali, native)
+# phosh needs EGL_PLATFORM=hwcomposer/WLR_BACKENDS globally (/etc/environment),
+# which leaks into the shared systemd --user manager and thus into the GNOME
+# shell + every app launched by the manager. gnome-mali wants a native session,
+# so strip those here and set the native EGL_PLATFORM=wayland. This unit is only
+# wired into gnome-session@gnome-mali.target, so phosh is never affected.
+# Ordered before the shell/apps so they inherit the cleaned manager env.
+DefaultDependencies=no
+Before=org.gnome.Shell@user.service gnome-session-initialized.target gnome-session@gnome-mali.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/systemctl --user unset-environment EGL_PLATFORM WLR_BACKENDS WLR_HWC_SKIP_VERSION_CHECK
+ExecStart=/usr/bin/systemctl --user set-environment EGL_PLATFORM=wayland

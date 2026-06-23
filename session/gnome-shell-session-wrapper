@@ -1,0 +1,11 @@
+#!/bin/bash
+# Start gnome-shell only for the gnome-mali session. The gnome-mali launcher
+# sets HYBRIS_EGLPLATFORM=drmadapter, which phosh does not -- this is a more
+# reliable discriminator than XDG_SESSION_DESKTOP/GDMSESSION, which the phrog
+# greeter stamps as "phosh"/"Phosh:GNOME" even when launching gnome-mali.
+if [ "$HYBRIS_EGLPLATFORM" = "drmadapter" ] || echo "${GDMSESSION:-${XDG_SESSION_DESKTOP}}" | grep -qi "gnome-mali"; then
+    exec /usr/bin/gnome-shell
+fi
+# In phosh: exit cleanly so OnFailure is not triggered and gnome-session
+# continues without gnome-shell.
+exit 0
