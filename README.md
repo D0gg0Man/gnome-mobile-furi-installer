@@ -34,9 +34,10 @@ Graphics shims (built from the `D0gg0Man` repos):
 
 GNOME Mobile (GNOME 49 branches), installed over the stock packages:
 
-- **gnome-settings-daemon-mobile-furi** (`gnome-49-mobile`)
 - **mutter-mobile-furi** (`mobile-shell-devel-49`) -- refresh-rate fix for the
-  MediaTek panel.
+  MediaTek panel. Builds against the stock distro `gnome-settings-daemon`
+  (no settings-daemon fork needed -- power/backlight is handled by the shell
+  and the device `gsd-adapter`).
 - **gnome-shell-mobile-furi** (`mobile-shell-devel-49`) -- gdm-free PAM lock
   screen.
 - **gnome-mobile-pam-helper** -- setuid helper the lock screen authenticates

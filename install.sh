@@ -122,15 +122,14 @@ gnome() {
         libsecret-1-dev libxml2-dev libpolkit-agent-1-dev libgdk-pixbuf-2.0-dev \
         evolution-data-server-dev libecal2.0-dev libedataserver1.2-dev \
         gnome-control-center-dev libatk-bridge2.0-dev bash-completion sassc \
-        libpam0g-dev
+        libpam0g-dev gnome-settings-daemon-dev
 
-    # Build order matters: gsd first (mutter pins gnome-settings-daemon=49.mobile.0),
-    # then mutter, then gnome-shell (links libmutter).
-    say "gnome-settings-daemon-mobile-furi"
-    clone gnome-settings-daemon-mobile-furi gnome-49-mobile
-    meson setup _b --wipe --prefix=/usr --libdir="lib/$MULTIARCH"
-    ninja -C _b; ninja -C _b install
-
+    # No gnome-settings-daemon fork: mutter-mobile-furi builds against the stock
+    # distro gnome-settings-daemon (its meson dep is just a version gate +
+    # gsd-enums.h; the gsd D-Bus interfaces it needs are bundled in mutter).
+    # On FuriOS power/backlight is handled by the shell + the device gsd-adapter,
+    # so the stock gnome-settings-daemon is all that's required at runtime.
+    # Build order: mutter first, then gnome-shell (links libmutter).
     say "mutter-mobile-furi"
     clone mutter-mobile-furi mobile-shell-devel-49
     meson setup _b --wipe --prefix=/usr --libdir="lib/$MULTIARCH" \
