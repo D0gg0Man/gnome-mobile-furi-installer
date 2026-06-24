@@ -22,6 +22,10 @@ Environment=LANG=C.UTF-8
 Environment=XDG_CURRENT_DESKTOP=GNOME
 Environment=XDG_SESSION_DESKTOP=gnome
 Environment=XDG_SESSION_TYPE=wayland
+# Bind the session to seat0/VT7 so logind grants device access (brightness via
+# SetBrightness, DPMS, input). Without a seat logind refuses with NotYourDevice.
+Environment=XDG_SEAT=seat0
+Environment=XDG_VTNR=7
 # Wait for the hwcomposer android prop, exactly like phosh's 10-wait drop-in.
 ExecStartPre=/bin/bash -c "WAITFORSERVICE_VALUE=1 waitforservice vendor.furios.hwcomposer.ready && sleep 3"
 ExecStart=/sbin/capsh --noamb -- -c "exec /usr/libexec/gnome-mali-session"
