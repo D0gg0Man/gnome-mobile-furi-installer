@@ -165,6 +165,10 @@ session() {
         /usr/lib/systemd/user/gnome-session@gnome-mali.target.d/session.conf
     install -Dm 644 "$S/gnome-mali-strip-hwcomposer.service" \
         /usr/lib/systemd/user/gnome-mali-strip-hwcomposer.service
+    # gnome-shell env guard: guarantee the compositor's environment regardless
+    # of what a previous (phosh) session imported into the user manager
+    install -Dm 644 "$S/user-units/org.gnome.Shell@wayland.service.d-gnome-mali-env.conf" \
+        /usr/lib/systemd/user/org.gnome.Shell@wayland.service.d/gnome-mali-env.conf
     # system session service (replaces phosh's role on tty7) + its PAM stack
     install -Dm 644 "$S/gnome-mali.service" /etc/systemd/system/gnome-mali.service
     install -Dm 644 "$S/pam-gnome-mali"     /etc/pam.d/gnome-mali

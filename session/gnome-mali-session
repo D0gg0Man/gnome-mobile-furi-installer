@@ -7,6 +7,11 @@
 # Uses gnome-session to properly start all GSD services including
 # gsd-power (screen lock) and gsd-media-keys.
 
+# systemctl --user / dbus need this to reach the user manager from the
+# system-service launch context (otherwise the env scrub below silently fails).
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+
 export GBM_BACKEND=hybris
 export GBM_BACKENDS_PATH=/usr/lib/aarch64-linux-gnu/gbm
 export GSK_RENDERER=gl
@@ -30,14 +35,29 @@ else
 fi
 
 # Push Mali environment into systemd user instance so gnome-shell
-# and all gsd services inherit our vars
-systemctl --user unset-environment XDG_SESSION_DESKTOP XDG_CURRENT_DESKTOP
-systemctl --user import-environment \
-    GBM_BACKEND GBM_BACKENDS_PATH GSK_RENDERER GDK_BACKEND GDK_GL \
-    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE \
-    MUTTER_DEBUG_FORCE_KMS_MODE HYBRIS_EGLPLATFORM MOBILE_SHELL_FORCE_PHONE \
-    LD_PRELOAD XDG_SESSION_ID XDG_SEAT XDG_VTNR
+# and all gsd services inherit our vars. Also scrub anything a previous
+# phosh-DRM session imported (EGL_PLATFORM=wayland inside mutter breaks its
+# EGL init; stale XDG_*_DESKTOP misroutes session-specific behavior like the
+# shim's is_gnome() gating).
+systemctl --user unset-environment \
+    XDG_SESSION_DESKTOP XDG_CURRENT_DESKTOP \
+    EGL_PLATFORM WAYLAND_DISPLAY WLR_BACKENDS WLR_RENDERER WLR_DRM_DEVICES \
+    HYBRIS_WLROOTS GBM_HYBRIS_LINEAR DRMADAPTER_HEARTBEAT
+# Import each variable separately: import-environment fails the WHOLE batch
+# if any listed variable is unset in this context (XDG_SESSION_ID etc. often
+# are when launched from the system service).
+for v in GBM_BACKEND GBM_BACKENDS_PATH GSK_RENDERER GDK_BACKEND GDK_GL \
+         XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE \
+         MUTTER_DEBUG_FORCE_KMS_MODE HYBRIS_EGLPLATFORM MOBILE_SHELL_FORCE_PHONE \
+         LD_PRELOAD XDG_SESSION_ID XDG_SEAT XDG_VTNR; do
+    [ -n "${!v:-}" ] && systemctl --user import-environment "$v" 2>/dev/null
+done
 systemctl --user unset-environment __EGL_VENDOR_LIBRARY_FILENAMES
+# Sync the D-Bus activation environment too (gnome-session updates it from the
+# previous session; stale values reach dbus-activated services otherwise).
+dbus-update-activation-environment --systemd \
+    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE \
+    HYBRIS_EGLPLATFORM GBM_BACKEND GBM_BACKENDS_PATH 2>/dev/null || true
 
 exec env -u __EGL_VENDOR_LIBRARY_FILENAMES \
     gnome-session --session=gnome-mali \
